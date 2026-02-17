@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# pcm-vox — pipe DJI MIC MINI audio through synapse into vox for transcription
+#
+# Captures audio via synapse, decodes base64 f32le PCM, resamples from
+# 48kHz stereo to 16kHz mono, and feeds into vox for speech-to-text.
+#
+# Usage:
+#   pcm-vox [seconds] [--json] [--timestamps]
+#
+# Examples:
+#   pcm-vox 10              # Record 10 seconds, transcribe
+#   pcm-vox 30 --json       # Record 30 seconds, JSON output
+#   pcm-vox 5 --timestamps  # Record 5 seconds, timestamped output
+#
+# Defaults: 10 seconds, plain text output
+
+set -euo pipefail
+
+SECONDS_TO_RECORD="${1:-10}"
+shift 2>/dev/null || true
+VOX_ARGS=("$@")
+
+MODEL="${VOX_MODEL:-$HOME/.local/share/vox/ggml-large-v3-turbo.bin}"
+VOX="${VOX_BIN:-$(dirname "$0")/../vox/target/release/vox}"
+SYNAPSE_PORT="${SYNAPSE_PORT:-4447}"
+
+if [ ! -f "$MODEL" ]; then
+    echo "error: model not found at $MODEL" >&2
+    echo "  download with: curl -L 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin' -o '$MODEL'" >&2
+    exit 1
+fi
+
+if [ ! -x "$VOX" ]; then
+    echo "error: vox binary not found at $VOX" >&2
+    echo "  build with: cd $(dirname "$0")/../vox && cargo build --release" >&2
+    exit 1
+fi
+
+echo "Recording ${SECONDS_TO_RECORD}s from DJI MIC (port ${SYNAPSE_PORT})..." >&2
+
+# Pipeline:
+#   synapse → json events with base64 audio
+#   python  → decode base64 from audio_data events → raw f32le bytes
+#   ffmpeg  → resample 48kHz stereo → 16kHz mono f32le
+#   vox     → transcribe
+timeout "${SECONDS_TO_RECORD}" \
+  synapse -P "$SYNAPSE_PORT" dji-mic dji stream_audio --json 2>/dev/null \
+  | python3 -uc "
+import sys, json, base64
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        ev = json.loads(line)
+        if ev.get('type') == 'audio_data':
+            sys.stdout.buffer.write(base64.b64decode(ev['data']))
+            sys.stdout.buffer.flush()
+    except (json.JSONDecodeError, KeyError):
+        pass
+" \
+  | ffmpeg -hide_banner -loglevel error \
+      -f f32le -ar 48000 -ac 2 -i pipe:0 \
+      -f f32le -ar 16000 -ac 1 pipe:1 \
+  | "$VOX" --model "$MODEL" "${VOX_ARGS[@]}"
