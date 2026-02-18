@@ -1,0 +1,79 @@
+#!/bin/sh
+# hyperforge pre-push hook
+# Validates push targets against .hyperforge/config.toml
+# Installed by: hyperforge init
+
+set -e
+
+REMOTE="$1"
+URL="$2"
+
+# Find .hyperforge/config.toml relative to repo root
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+CONFIG="$REPO_ROOT/.hyperforge/config.toml"
+
+if [ ! -f "$CONFIG" ]; then
+    # No config — allow push (not a hyperforge-managed repo)
+    exit 0
+fi
+
+# Extract org from config
+DECLARED_ORG=$(grep -m1 '^org' "$CONFIG" | sed 's/.*=\s*"\(.*\)"/\1/' | tr -d ' ')
+
+# Extract forges list from config
+DECLARED_FORGES=$(grep -m1 '^forges' "$CONFIG" | sed 's/.*\[\(.*\)\]/\1/' | tr -d '"' | tr -d ' ')
+
+# Determine forge from URL
+FORGE=""
+case "$URL" in
+    *github.com*)    FORGE="github" ;;
+    *codeberg.org*)  FORGE="codeberg" ;;
+    *gitlab.com*)    FORGE="gitlab" ;;
+esac
+
+if [ -z "$FORGE" ]; then
+    # Unknown forge — allow push (could be a custom remote)
+    exit 0
+fi
+
+# Check forge is in declared list
+if [ -n "$DECLARED_FORGES" ]; then
+    case ",$DECLARED_FORGES," in
+        *",$FORGE,"*) ;;  # Found — continue
+        *)
+            echo "hyperforge: BLOCKED — forge '$FORGE' not in declared forges [$DECLARED_FORGES]"
+            echo "hyperforge: Update .hyperforge/config.toml to add this forge, or use --no-verify to skip."
+            exit 1
+            ;;
+    esac
+fi
+
+# Extract org from push URL
+URL_ORG=""
+case "$URL" in
+    git@*)
+        # git@github.com:org/repo.git
+        URL_ORG=$(echo "$URL" | sed 's/.*:\(.*\)\/.*/\1/')
+        ;;
+    https://*)
+        # https://github.com/org/repo.git
+        URL_ORG=$(echo "$URL" | sed 's|https://[^/]*/\([^/]*\)/.*|\1|')
+        ;;
+esac
+
+# Check org matches
+if [ -n "$DECLARED_ORG" ] && [ -n "$URL_ORG" ]; then
+    # Check for forge-specific org override
+    FORGE_ORG=$(grep -A2 "^\[forge\.$FORGE\]" "$CONFIG" 2>/dev/null | grep -m1 'org' | sed 's/.*=\s*"\(.*\)"/\1/' | tr -d ' ')
+    EXPECTED_ORG="${FORGE_ORG:-$DECLARED_ORG}"
+
+    if [ "$URL_ORG" != "$EXPECTED_ORG" ]; then
+        echo "hyperforge: BLOCKED — pushing to org '$URL_ORG' but declared org is '$EXPECTED_ORG'"
+        echo "hyperforge: This prevents accidental pushes to the wrong organization."
+        echo "hyperforge: Use --no-verify to skip, or update .hyperforge/config.toml."
+        exit 1
+    fi
+fi
+
+# All checks passed
+exit 0
