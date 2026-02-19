@@ -15,8 +15,8 @@ path = "src/bin/dji_mic.rs"
 
 [dependencies]
 # Hub framework integration
-plexus-core = "0.2.1"
-plexus-macros = "0.2.1"
+plexus-core = "0.3.0"
+plexus-macros = "0.3.0"
 
 # Audio capture
 cpal = "0.15"
