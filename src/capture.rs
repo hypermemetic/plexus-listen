@@ -11,7 +11,7 @@ use rubato::Resampler;
 use audioadapter_buffers::direct::SequentialSliceOfVecs;
 
 use crate::device;
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "app-capture"))]
 use crate::sck;
 
 /// Wrapper to make cpal::Stream safely Send.
@@ -119,7 +119,7 @@ pub fn build_dual_input_stream(
 /// Unified audio source — either a hardware device or a macOS application.
 pub enum AudioSource {
     Hardware(cpal::Device, cpal::StreamConfig),
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-capture"))]
     App(sck::AppSource),
 }
 
@@ -127,7 +127,7 @@ impl AudioSource {
     pub fn sample_rate(&self) -> u32 {
         match self {
             AudioSource::Hardware(_, config) => config.sample_rate.0,
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", feature = "app-capture"))]
             AudioSource::App(_) => 48000,
         }
     }
@@ -135,7 +135,7 @@ impl AudioSource {
     pub fn channels(&self) -> u16 {
         match self {
             AudioSource::Hardware(_, config) => config.channels,
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", feature = "app-capture"))]
             AudioSource::App(_) => 2,
         }
     }
@@ -145,7 +145,7 @@ impl AudioSource {
             AudioSource::Hardware(dev, _) => {
                 cpal::traits::DeviceTrait::name(dev).unwrap_or_else(|_| "Unknown".to_string())
             }
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", feature = "app-capture"))]
             AudioSource::App(app) => app.name.clone(),
         }
     }
@@ -157,7 +157,7 @@ impl AudioSource {
                     .map(|n| n.contains("DJI") || n.contains("dji"))
                     .unwrap_or(false)
             }
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", feature = "app-capture"))]
             AudioSource::App(_) => false,
         }
     }
@@ -166,7 +166,7 @@ impl AudioSource {
 /// Unified capture stream — either cpal hardware or SCK app capture.
 pub enum CaptureStream {
     Cpal(SendStream),
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-capture"))]
     Sck(sck::AppCaptureGuard),
 }
 
@@ -189,7 +189,7 @@ pub fn open_audio_source(
                 return Ok(AudioSource::Hardware(dev, config));
             }
             // Try app capture on macOS
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", feature = "app-capture"))]
             {
                 if let Some(app) = device::find_app_source(name) {
                     return Ok(AudioSource::App(app));
@@ -211,7 +211,7 @@ pub fn build_capture_stream(
             let stream = build_input_stream(dev, config, producer, error_flag)?;
             Ok(CaptureStream::Cpal(stream))
         }
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", feature = "app-capture"))]
         AudioSource::App(app) => {
             let guard = sck::start_app_capture(app, producer, error_flag)?;
             Ok(CaptureStream::Sck(guard))
@@ -231,7 +231,7 @@ pub fn build_dual_capture_stream(
             let stream = build_dual_input_stream(dev, config, producer_a, producer_b, error_flag)?;
             Ok(CaptureStream::Cpal(stream))
         }
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", feature = "app-capture"))]
         AudioSource::App(app) => {
             let guard = sck::start_app_capture_dual(app, producer_a, producer_b, error_flag)?;
             Ok(CaptureStream::Sck(guard))
@@ -571,7 +571,7 @@ pub fn is_device_connected(device_name: Option<&str>) -> bool {
     if device::find_audio_device(device_name).is_some() {
         return true;
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-capture"))]
     if let Some(name) = device_name {
         if device::find_app_source(name).is_some() {
             return true;

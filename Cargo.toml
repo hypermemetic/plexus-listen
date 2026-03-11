@@ -66,6 +66,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 chrono = "0.4"
 anyhow = "1"
 
+[features]
+default = ["app-capture"]
+app-capture = ["screencapturekit"]
+
 [target.'cfg(target_os = "macos")'.dependencies]
-screencapturekit = { version = "1.5", features = ["macos_13_0"] }
+screencapturekit = { version = "1.5", features = ["macos_13_0"], optional = true }
 

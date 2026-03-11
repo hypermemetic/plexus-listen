@@ -4,7 +4,7 @@ fn main() {
     // to the Swift runtime, dyld will SIGABRT at launch.
     //
     // On macOS the Swift runtime ships at /usr/lib/swift.
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-capture"))]
     {
         println!("cargo:rustc-link-arg=-Xlinker");
         println!("cargo:rustc-link-arg=-rpath");

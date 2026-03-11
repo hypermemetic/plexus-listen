@@ -8,7 +8,7 @@ pub mod device;
 pub mod hub;
 pub mod meter;
 pub mod recorder;
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "app-capture"))]
 pub mod sck;
 pub mod types;
 

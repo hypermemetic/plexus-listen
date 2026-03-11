@@ -140,7 +140,7 @@ pub fn list_audio_input_devices() -> Vec<AudioDevice> {
     }
 
     // Append capturable applications on macOS (silently skip on permission denial)
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-capture"))]
     {
         if let Ok(apps) = crate::sck::list_capturable_apps() {
             for app in apps {
@@ -218,7 +218,7 @@ pub fn preferred_stream_config(device: &cpal::Device) -> Option<cpal::StreamConf
 }
 
 /// Find a capturable application by case-insensitive name substring.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "app-capture"))]
 pub fn find_app_source(query: &str) -> Option<crate::sck::AppSource> {
     let apps = crate::sck::list_capturable_apps().ok()?;
     let query_lower = query.to_lowercase();
