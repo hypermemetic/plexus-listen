@@ -34,7 +34,7 @@ impl Default for MicHub {
     }
 }
 
-#[plexus_macros::hub_methods(
+#[plexus_macros::activation(
     namespace = "mic",
     version = "0.1.0",
     description = "Audio capture, recording, metering, and live streaming",
@@ -42,7 +42,7 @@ impl Default for MicHub {
 )]
 impl MicHub {
     /// Show USB device info for the connected DJI MIC MINI
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         description = "Get USB device info (vendor/product ID, name) for a connected DJI MIC"
     )]
     pub async fn info(&self) -> impl Stream<Item = MicEvent> + Send + 'static {
@@ -74,7 +74,7 @@ impl MicHub {
     }
 
     /// List all audio input devices, highlighting DJI devices
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         description = "List all audio input devices — DJI devices are flagged with is_dji: true"
     )]
     pub async fn list_devices(&self) -> impl Stream<Item = MicEvent> + Send + 'static {
@@ -85,7 +85,7 @@ impl MicHub {
     }
 
     /// Record audio to a WAV file, streaming progress and levels until timeout or client disconnect
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         streaming,
         description = "Record audio to a WAV file. Streams progress events. Stops after timeout (if set) or when client disconnects.",
         params(
@@ -195,7 +195,7 @@ impl MicHub {
     }
 
     /// Stream real-time audio levels without recording
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         streaming,
         description = "Stream real-time RMS + peak audio levels. Stops when client disconnects.",
         params(
@@ -252,7 +252,7 @@ impl MicHub {
     }
 
     /// Stream live audio data as base64-encoded PCM chunks
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         streaming,
         description = "Stream live audio data as base64-encoded f32le PCM chunks. Stops when client disconnects.",
         params(
@@ -324,7 +324,7 @@ impl MicHub {
     }
 
     /// Probe individual channels with detailed analysis
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         description = "Capture a short audio window and analyze each channel independently. \
                        Reports dBFS levels, noise floor, dynamic range, DC offset, and whether \
                        channels carry independent signals or are duplicated mono.",
@@ -448,7 +448,7 @@ impl MicHub {
     }
 
     /// Live audio monitoring — plays captured audio through the default output device
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         streaming,
         description = "Play captured audio live through the system output. \
                        Streams level events while monitoring. Stops when client disconnects.",
@@ -524,7 +524,7 @@ impl MicHub {
     }
 
     /// Enumerate available audio channels with labels
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         description = "List available audio channels with descriptive labels. DJI channels are labeled TX1/TX2 by default.",
         params(
             device = "Audio device name substring (default: auto-detect)",
@@ -576,7 +576,7 @@ impl MicHub {
     }
 
     /// Stream per-channel deinterleaved audio with level metering
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         streaming,
         description = "Stream per-channel mono audio data with level metering. Each tick emits ChannelAudioData + ChannelLevel per selected channel. Stops when client disconnects.",
         params(
@@ -704,7 +704,7 @@ impl MicHub {
     }
 
     /// Get current plugin status
-    #[plexus_macros::hub_method(
+    #[plexus_macros::method(
         description = "Check if an audio input device is connected",
         params(
             device = "Audio device name substring (default: auto-detect)"
