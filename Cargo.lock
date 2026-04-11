@@ -1379,6 +1379,8 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 [[package]]
 name = "plexus-core"
 version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ff2d6c3fedbf981a3accd17596cfa77faf8e6d3019f52ee06d1ee86cf52efda"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1445,6 +1447,8 @@ dependencies = [
 [[package]]
 name = "plexus-macros"
 version = "0.3.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ba5bd8dc4526fea205abb1c3d40ba6f2ecfc21c6a23ed715d1bed133b6017c8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1455,13 +1459,13 @@ dependencies = [
 [[package]]
 name = "plexus-transport"
 version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88023aa2e8e43b081919237d3932b40634dee469df9963c521be0c3207c311f8"
 dependencies = [
  "anyhow",
  "async-stream",
  "axum",
- "form_urlencoded",
  "futures",
- "http",
  "jsonrpsee",
  "plexus-core",
  "rmcp",
@@ -2855,3 +2859,15 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[patch.unused]]
+name = "plexus-core"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "plexus-macros"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "plexus-transport"
+version = "0.2.0"
